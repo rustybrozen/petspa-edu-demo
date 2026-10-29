@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pet Spa - Nhân Viên</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand navbar-dark bg-dark px-3 mb-3">
+      <div class="container-fluid px-0">
+        <span class="navbar-brand fw-bold mb-0 h6">PET SPA</span>
+        <ul class="navbar-nav me-auto mb-0">
+          <li class="nav-item">
+            <a class="nav-link active text-white" href="/staff.html">Điều Phối & Thanh Toán</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white-50" href="/profile.html">Thông Tin Cá Nhân</a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-white small d-none d-sm-inline" id="staffUserText"></span>
+          <button class="btn btn-sm btn-outline-light py-1" onclick="logoutStaff()">Đăng xuất</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container pb-4">
+      <div class="card mb-3">
+        <div class="card-header fw-bold bg-white d-flex justify-content-between align-items-center">
+          <span>1. Điều Phối Lịch Hẹn</span>
+          <button class="btn btn-sm btn-outline-secondary py-0" onclick="fetchBookings()">Làm mới</button>
+        </div>
+        <div class="card-body p-0 small">
+          <table class="table table-hover mb-0 align-middle">
+            <thead class="table-light">
+              <tr>
+                <th>Mã</th>
+                <th>Khách hàng</th>
+                <th>Thú cưng</th>
+                <th>Dịch vụ</th>
+                <th>Ngày hẹn</th>
+                <th>Đã cọc</th>
+                <th>Trạng thái</th>
+                <th class="text-end">Thao tác</th>
+              </tr>
+            </thead>
+            <tbody id="staffBookingTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header fw-bold bg-white">2. Tính Giá & Thanh Toán</div>
+            <div class="card-body small">
+              <div class="p-2 bg-light border mb-2" id="selectedOrderInfo">
+                <i>Bấm "Tính tiền" ở bảng trên để chọn đơn</i>
+              </div>
+
+              <label class="fw-bold mb-1">Chính sách giá:</label>
+              <select id="strategySelect" class="form-select form-select-sm mb-2" onchange="calculateInvoice()">
+                <option value="WEEKDAY">Ngày thường</option>
+                <option value="WEEKEND">Cuối tuần</option>
+              </select>
+
+              <label class="fw-bold mb-1">Định dạng chứng từ:</label>
+              <select id="bridgeFormatSelect" class="form-select form-select-sm mb-2" onchange="renderInvoicePreview()">
+                <option value="ONLINE">Bản điện tử</option>
+                <option value="OFFLINE">Bản in tại quầy</option>
+              </select>
+
+              <div class="border p-2 bg-light mb-2">
+                <div class="d-flex justify-content-between">
+                  <span>Tổng tiền dịch vụ:</span><b id="txtGrossTotal">0 VNĐ</b>
+                </div>
+                <div class="d-flex justify-content-between text-success">
+                  <span>Đã đặt cọc:</span><b id="txtDepositDeducted">0 VNĐ</b>
+                </div>
+                <div class="d-flex justify-content-between fw-bold border-top pt-1 mt-1 text-danger">
+                  <span>Còn phải thu:</span><span id="txtNetPayable">0 VNĐ</span>
+                </div>
+              </div>
+
+              <button id="btnCheckout" class="btn btn-sm btn-success w-100 fw-bold py-2" onclick="checkout()">
+                XÁC NHẬN THANH TOÁN
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-6">
+          <div class="card h-100">
+            <div class="card-header fw-bold bg-white">3. Xem Chứng Từ</div>
+            <div class="card-body bg-light small" id="invoicePreviewContainer">
+              <div class="text-muted">Chọn một đơn để xem trước chứng từ.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+      if (!currentUser || currentUser.customerType !== "ADMIN") window.location.replace("/login.html");
+
+      let bookings = [];
+      let selectedBookingId = null;
+
+      function logoutStaff() {
+        localStorage.removeItem("currentUser");
+        window.location.replace("/login.html");
+      }
+
+      if (document.getElementById("staffUserText")) {
+        document.getElementById("staffUserText").innerText =
+          (currentUser.fullName ? currentUser.fullName + " - " : "") + currentUser.phone;
+      }
+
+      async function fetchBookings() {
+        const res = await fetch("/api/staff/bookings");
+        if (!res.ok) return;
+        bookings = await res.json();
+        renderTable();
+      }
+
+      function renderTable() {
+        document.getElementById("staffBookingTableBody").innerHTML =
+          bookings
+            .map(
+              (b) => `<tr>
+                <td>#${b.id}</td>
+                <td><b>${b.customer}</b></td>
+                <td>${b.pet}</td>
+                <td>${b.sName}</td>
+                <td>${b.date}</td>
+                <td>${b.depositPaid.toLocaleString()}đ</td>
+                <td><span class="badge ${b.status === "COMPLETED" ? "bg-success" : "bg-dark"}">${b.status}</span></td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-secondary py-0 me-1" onclick="previewAppointment(${b.id})">Phiếu hẹn</button>
+                  ${b.status === "CONFIRMED" ? `<button class="btn btn-sm btn-primary py-0" onclick="updateStatus(${b.id}, 'IN_PROGRESS')">Nhận làm</button>` : ""}
+                  ${b.status === "IN_PROGRESS" ? `<button class="btn btn-sm btn-success py-0" onclick="selectForBilling(${b.id})">Tính tiền</button>` : ""}
+                  ${b.status === "COMPLETED" ? `<button class="btn btn-sm btn-outline-success py-0" onclick="selectForBilling(${b.id})">Hóa đơn</button>` : ""}
+                </td>
+              </tr>`
+            )
+            .join("") || '<tr><td colspan="8" class="text-center p-3 text-muted">Chưa có lịch hẹn</td></tr>';
+      }
+
+      async function updateStatus(id, status) {
+        await fetch(`/api/staff/bookings/${id}/status`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status }),
+        });
+        await fetchBookings();
+      }
+
+      function selectForBilling(id) {
+        selectedBookingId = id;
+        const b = bookings.find((x) => x.id === id);
+        if (!b) return;
+
+        document.getElementById("selectedOrderInfo").innerHTML =
+          `Đơn <b>#${b.id}</b> | Khách: <b>${b.customer}</b> | Thú cưng: <b>${b.pet}</b> | Dịch vụ: <b>${b.sName}</b>`;
+
+        document.getElementById("btnCheckout").style.display = b.status === "COMPLETED" ? "none" : "block";
+
+        const day = new Date(b.date).getDay();
+        document.getElementById("strategySelect").value = day === 0 || day === 6 ? "WEEKEND" : "WEEKDAY";
+        calculateInvoice();
+      }
+
+      async function calculateInvoice() {
+        if (!selectedBookingId) return;
+        const strategy = document.getElementById("strategySelect").value;
+
+        const res = await fetch("/api/staff/billing/calculate", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookingId: selectedBookingId, strategy }),
+        });
+        if (!res.ok) return;
+        const calc = await res.json();
+
+        document.getElementById("txtGrossTotal").innerText = calc.grossTotal.toLocaleString() + " VNĐ";
+        document.getElementById("txtDepositDeducted").innerText = "-" + calc.depositPaid.toLocaleString() + " VNĐ";
+        document.getElementById("txtNetPayable").innerText = calc.netPayable.toLocaleString() + " VNĐ";
+
+        renderInvoicePreview();
+      }
+
+      async function renderInvoicePreview() {
+        if (!selectedBookingId) return;
+        const format = document.getElementById("bridgeFormatSelect").value;
+        const strategy = document.getElementById("strategySelect").value;
+
+        const res = await fetch(`/api/staff/bookings/${selectedBookingId}/export-invoice?format=${format}&strategy=${strategy}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById("invoicePreviewContainer").innerHTML =
+          format === "OFFLINE"
+            ? `<pre class="p-2 bg-dark text-light mb-0" style="white-space: pre-wrap">${data.content}</pre>`
+            : `<div class="p-3 bg-white border">${data.content}</div>`;
+      }
+
+      async function previewAppointment(id) {
+        const format = document.getElementById("bridgeFormatSelect").value.toLowerCase();
+        const res = await fetch(`/api/booking/${id}/export?format=${format}`);
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById("invoicePreviewContainer").innerHTML =
+          format === "offline"
+            ? `<pre class="p-2 bg-dark text-light mb-0" style="white-space: pre-wrap">${data.content}</pre>`
+            : `<div class="p-3 bg-white border">${data.content}</div>`;
+      }
+
+      async function checkout() {
+        if (!selectedBookingId) return alert("Vui lòng bấm Tính tiền ở một đơn trên bảng trước!");
+
+        const res = await fetch("/api/staff/billing/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ bookingId: selectedBookingId }),
+        });
+        if (res.ok) {
+          alert("Đã xác nhận thanh toán hoàn tất!");
+          await fetchBookings();
+          selectForBilling(selectedBookingId);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", fetchBookings);
+      setInterval(fetchBookings, 2000);
+    </script>
+  </body>
+</html>

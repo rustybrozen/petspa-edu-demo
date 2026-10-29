@@ -1,0 +1,18 @@
+# Sensitive / User specified
+BaoCao_UML/
+baocao_uml/
+petspa.db
+petspa.db-shm
+petspa.db-wal
+petspa.db-journal
+PROJECT_MAP.md
+
+# Build & Tooling
+bin/
+obj/
+.vs/
+.vscode/
+.idea/
+.agent/
+*.user
+*.suo

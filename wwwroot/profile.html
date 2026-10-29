@@ -1,0 +1,214 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Cập Nhật Thông Tin - Pet Spa</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body class="bg-light">
+    <nav id="mainNav" class="navbar navbar-expand navbar-dark px-3 mb-4">
+      <div class="container-fluid px-0">
+        <span class="navbar-brand fw-bold mb-0 h6" id="navBrand">PET SPA</span>
+        <ul class="navbar-nav me-auto mb-0" id="navLinks"></ul>
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-white small d-none d-sm-inline" id="navUserText"></span>
+          <button class="btn btn-sm btn-outline-light py-1" onclick="handleLogout()">Đăng xuất</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+          <div class="card shadow-sm">
+            <div class="card-header bg-white fw-bold py-3 text-center text-success" id="cardHeaderTitle">
+              CẬP NHẬT THÔNG TIN TÀI KHOẢN
+            </div>
+            <div class="card-body p-4 small">
+              <div id="alertBox" class="alert d-none py-2" role="alert"></div>
+
+              <form id="profileForm" onsubmit="handleUpdateProfile(event)">
+                <div class="mb-3">
+                  <label class="form-label fw-bold mb-1">Họ và tên</label>
+                  <input
+                    type="text"
+                    id="txtFullName"
+                    class="form-control form-control-sm"
+                    placeholder="Nhập họ và tên"
+                  />
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-bold mb-1">Số điện thoại (Tài khoản đăng nhập)</label>
+                  <input
+                    type="text"
+                    id="txtPhone"
+                    class="form-control form-control-sm"
+                    placeholder="Nhập số điện thoại"
+                    required
+                  />
+                  <div class="form-text text-muted">Số điện thoại dùng để đăng nhập và không được trùng với tài khoản khác.</div>
+                </div>
+
+                <div class="mb-3">
+                  <label class="form-label fw-bold mb-1">Mật khẩu mới</label>
+                  <input
+                    type="password"
+                    id="txtPassword"
+                    class="form-control form-control-sm"
+                    placeholder="Để trống nếu không muốn đổi mật khẩu"
+                  />
+                </div>
+
+                <div class="mb-4">
+                  <label class="form-label fw-bold mb-1">Vai trò</label>
+                  <input
+                    type="text"
+                    id="txtRole"
+                    class="form-control form-control-sm bg-light"
+                    readonly
+                  />
+                </div>
+
+                <div class="d-flex gap-2">
+                  <button type="submit" id="btnSave" class="btn btn-sm btn-success w-100 fw-bold py-2">
+                    LƯU THAY ĐỔI
+                  </button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary w-50 py-2" onclick="goBackDashboard()">
+                    Quay lại
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+      if (!currentUser) {
+        window.location.replace("/login.html");
+      }
+
+      const isAdmin = currentUser.customerType === "ADMIN";
+
+      const nav = document.getElementById("mainNav");
+      const navBrand = document.getElementById("navBrand");
+      const navLinks = document.getElementById("navLinks");
+      const navUserText = document.getElementById("navUserText");
+      const cardHeaderTitle = document.getElementById("cardHeaderTitle");
+      const btnSave = document.getElementById("btnSave");
+
+      if (isAdmin) {
+        nav.classList.add("bg-dark");
+        navBrand.innerText = "PET SPA";
+        cardHeaderTitle.classList.remove("text-success");
+        cardHeaderTitle.classList.add("text-dark");
+        btnSave.classList.remove("btn-success");
+        btnSave.classList.add("btn-dark");
+
+        navLinks.innerHTML = `
+          <li class="nav-item">
+            <a class="nav-link text-white-50" href="/staff.html">Điều Phối & Thanh Toán</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active text-white" href="/profile.html">Thông Tin Cá Nhân</a>
+          </li>
+        `;
+      } else {
+        nav.classList.add("bg-success");
+        navBrand.innerText = "PET SPA";
+
+        navLinks.innerHTML = `
+          <li class="nav-item">
+            <a class="nav-link text-white-50" href="/customer.html">Đặt Lịch & Lịch Hẹn</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white-50" href="/pets.html">Thú Cưng Của Tôi</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active text-white" href="/profile.html">Thông Tin Cá Nhân</a>
+          </li>
+        `;
+      }
+
+      navUserText.innerText = (currentUser.fullName ? currentUser.fullName + " - " : "") + currentUser.phone;
+
+      function goBackDashboard() {
+        window.location.href = isAdmin ? "/staff.html" : "/customer.html";
+      }
+
+      function handleLogout() {
+        localStorage.removeItem("currentUser");
+        window.location.replace("/login.html");
+      }
+
+      function showAlert(msg, isSuccess = true) {
+        const box = document.getElementById("alertBox");
+        box.className = `alert py-2 ${isSuccess ? "alert-success" : "alert-danger"}`;
+        box.innerText = msg;
+        box.classList.remove("d-none");
+      }
+
+      async function loadProfile() {
+        try {
+          const res = await fetch(`/api/profile/${currentUser.id}`);
+          if (!res.ok) {
+            showAlert("Không thể tải thông tin hồ sơ!", false);
+            return;
+          }
+          const data = await res.json();
+          document.getElementById("txtFullName").value = data.fullName || "";
+          document.getElementById("txtPhone").value = data.phone || "";
+          document.getElementById("txtRole").value = data.customerType === "ADMIN" ? "Quản lý / Nhân viên" : "Khách hàng";
+        } catch (e) {
+          showAlert("Lỗi kết nối máy chủ!", false);
+        }
+      }
+
+      async function handleUpdateProfile(e) {
+        e.preventDefault();
+        const fullName = document.getElementById("txtFullName").value.trim();
+        const phone = document.getElementById("txtPhone").value.trim();
+        const password = document.getElementById("txtPassword").value;
+
+        if (!phone) {
+          showAlert("Vui lòng nhập số điện thoại!", false);
+          return;
+        }
+
+        try {
+          const res = await fetch(`/api/profile/${currentUser.id}`, {
+            method: "PUT",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ fullName, phone, password: password || null }),
+          });
+
+          const data = await res.json();
+          if (!res.ok) {
+            showAlert(data.message || "Cập nhật thất bại!", false);
+            return;
+          }
+
+          showAlert(data.message || "Cập nhật thông tin thành công!", true);
+          document.getElementById("txtPassword").value = "";
+
+          if (data.user) {
+            localStorage.setItem("currentUser", JSON.stringify(data.user));
+            navUserText.innerText = (data.user.fullName ? data.user.fullName + " - " : "") + data.user.phone;
+          }
+        } catch (err) {
+          showAlert("Lỗi khi kết nối đến máy chủ!", false);
+        }
+      }
+
+      document.addEventListener("DOMContentLoaded", loadProfile);
+    </script>
+  </body>
+</html>

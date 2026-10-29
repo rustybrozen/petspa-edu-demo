@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Thú Cưng Của Tôi - Pet Spa</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand navbar-dark bg-success px-3 mb-3">
+      <div class="container-fluid px-0">
+        <span class="navbar-brand fw-bold mb-0 h6">PET SPA</span>
+        <ul class="navbar-nav me-auto mb-0">
+          <li class="nav-item">
+            <a class="nav-link text-white-50" href="/customer.html">Đặt Lịch & Lịch Hẹn</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link active text-white" href="/pets.html">Thú Cưng Của Tôi</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white-50" href="/profile.html">Thông Tin Cá Nhân</a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-white small d-none d-sm-inline" id="userInfoText"></span>
+          <button class="btn btn-sm btn-outline-light py-1" onclick="logout()">Đăng xuất</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container pb-4">
+      <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+          <div class="card shadow-sm mb-3">
+            <div class="card-header fw-bold bg-white d-flex justify-content-between align-items-center py-2">
+              <span>Hồ Sơ Thú Cưng Của Tôi</span>
+              <a href="/customer.html" class="btn btn-sm btn-outline-success py-0">Đặt lịch ngay &rarr;</a>
+            </div>
+            <div class="card-body p-3 small">
+              <div class="row g-2 mb-3">
+                <div class="col-sm-9">
+                  <input
+                    id="pNameAndBreed"
+                    class="form-control form-control-sm"
+                    placeholder="Nhập tên bé và giống loài (Ví dụ: Milo - Chó Poodle, Miu - Mèo ta...)"
+                  />
+                </div>
+                <div class="col-sm-3">
+                  <button class="btn btn-sm btn-primary w-100 fw-bold" onclick="addPet()">
+                    + Thêm Bé
+                  </button>
+                </div>
+              </div>
+
+              <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0 align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th style="width: 60px" class="text-center">STT</th>
+                      <th>Tên thú cưng & giống loài</th>
+                      <th style="width: 90px" class="text-center">Thao tác</th>
+                    </tr>
+                  </thead>
+                  <tbody id="petTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+      if (!currentUser) window.location.replace("/login.html");
+      if (currentUser.customerType === "ADMIN") window.location.replace("/staff.html");
+
+      function logout() {
+        localStorage.removeItem("currentUser");
+        window.location.replace("/login.html");
+      }
+
+      async function init() {
+        const displayName = currentUser.fullName ? currentUser.fullName + " (" + currentUser.phone + ")" : currentUser.phone;
+        document.getElementById("userInfoText").innerText = displayName;
+        await loadPets();
+      }
+
+      async function loadPets() {
+        const res = await fetch(`/api/pet/customer/${currentUser.id}`);
+        if (!res.ok) return;
+        const pets = await res.json();
+        const tbody = document.getElementById("petTableBody");
+
+        if (pets.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="3" class="text-center py-3 text-muted">Bạn chưa có thú cưng nào. Hãy nhập thông tin bên trên để thêm!</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = pets
+          .map(
+            (p, idx) => `<tr>
+              <td class="text-center text-muted">${idx + 1}</td>
+              <td><b>${p.nameAndBreed}</b></td>
+              <td class="text-center">
+                <button class="btn btn-sm btn-outline-danger py-0 px-2" title="Xóa" onclick="deletePet(${p.id})">
+                  Xóa
+                </button>
+              </td>
+            </tr>`
+          )
+          .join("");
+      }
+
+      async function addPet() {
+        const nameAndBreed = document.getElementById("pNameAndBreed").value.trim();
+        if (!nameAndBreed) return alert("Vui lòng nhập tên thú cưng và giống loài!");
+
+        const res = await fetch("/api/pet", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ customerId: currentUser.id, nameAndBreed }),
+        });
+        if (res.ok) {
+          document.getElementById("pNameAndBreed").value = "";
+          await loadPets();
+        } else {
+          alert("Lỗi khi thêm thú cưng!");
+        }
+      }
+
+      async function deletePet(id) {
+        if (!confirm("Bạn có chắc chắn muốn xóa thú cưng này?")) return;
+        await fetch(`/api/pet/${id}`, { method: "DELETE" });
+        await loadPets();
+      }
+
+      document.addEventListener("DOMContentLoaded", init);
+    </script>
+  </body>
+</html>

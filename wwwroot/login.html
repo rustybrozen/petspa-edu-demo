@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập - Pet Spa</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body
+    class="bg-light d-flex align-items-center justify-content-center"
+    style="min-height: 100vh"
+  >
+    <div class="card shadow-sm p-4" style="max-width: 360px; width: 100%">
+      <h4 class="text-center text-success fw-bold mb-3">PET SPA</h4>
+
+      <div class="mb-2">
+        <label class="form-label small fw-bold mb-1">Số điện thoại</label>
+        <input
+          type="text"
+          id="phone"
+          class="form-control form-control-sm"
+          placeholder="Nhập số điện thoại"
+          required
+        />
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label small fw-bold mb-1">Mật khẩu</label>
+        <input
+          type="password"
+          id="password"
+          class="form-control form-control-sm"
+          placeholder="Nhập mật khẩu"
+          required
+        />
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-success btn-sm w-50" onclick="handleLogin()">
+          Đăng nhập
+        </button>
+        <button type="button" class="btn btn-outline-success btn-sm w-50" onclick="handleRegister()">
+          Đăng ký
+        </button>
+      </div>
+    </div>
+
+    <script>
+      async function handleLogin() {
+        const phone = document.getElementById("phone").value.trim();
+        const password = document.getElementById("password").value.trim();
+        if (!phone || !password) return alert("Vui lòng nhập số điện thoại và mật khẩu!");
+
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, password }),
+        });
+        const result = await res.json();
+        if (!res.ok) return alert(result.message || "Đăng nhập thất bại!");
+
+        localStorage.setItem("currentUser", JSON.stringify(result.user));
+        window.location.href = result.user.customerType === "ADMIN" ? "/staff.html" : "/customer.html";
+      }
+
+      async function handleRegister() {
+        const phone = document.getElementById("phone").value.trim();
+        const password = document.getElementById("password").value.trim();
+        if (!phone || !password) return alert("Vui lòng nhập số điện thoại và mật khẩu!");
+
+        const res = await fetch("/api/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ phone, password }),
+        });
+        const result = await res.json();
+        alert(result.message);
+      }
+    </script>
+  </body>
+</html>

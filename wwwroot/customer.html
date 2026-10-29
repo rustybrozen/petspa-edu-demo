@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đặt Lịch & Lịch Hẹn - Pet Spa</title>
+    <link
+      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css"
+      rel="stylesheet"
+    />
+    <link href="style.css" rel="stylesheet" />
+  </head>
+  <body class="bg-light">
+    <nav class="navbar navbar-expand navbar-dark bg-success px-3 mb-3">
+      <div class="container-fluid px-0">
+        <span class="navbar-brand fw-bold mb-0 h6">PET SPA</span>
+        <ul class="navbar-nav me-auto mb-0">
+          <li class="nav-item">
+            <a class="nav-link active text-white" href="/customer.html">Đặt Lịch & Lịch Hẹn</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white-50" href="/pets.html">Thú Cưng Của Tôi</a>
+          </li>
+          <li class="nav-item">
+            <a class="nav-link text-white-50" href="/profile.html">Thông Tin Cá Nhân</a>
+          </li>
+        </ul>
+        <div class="d-flex align-items-center gap-2">
+          <span class="text-white small d-none d-sm-inline" id="userInfoText"></span>
+          <button class="btn btn-sm btn-outline-light py-1" onclick="logout()">Đăng xuất</button>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container pb-4">
+      <div class="row g-3">
+        <div class="col-md-5 col-lg-4">
+          <div class="card shadow-sm mb-3">
+            <div class="card-header fw-bold bg-white d-flex justify-content-between align-items-center py-2">
+              <span>1. Đặt Lịch Hẹn</span>
+              <a href="/pets.html" class="btn btn-sm btn-outline-success py-0" style="font-size: 0.75rem">
+                + Quản lý thú cưng
+              </a>
+            </div>
+            <div class="card-body small p-3">
+              <label class="fw-bold mb-1">Chọn thú cưng</label>
+              <select id="bookingPet" class="form-select form-select-sm mb-2"></select>
+
+              <label class="fw-bold mb-1">Chọn gói dịch vụ</label>
+              <select id="bookingService" class="form-select form-select-sm mb-2"></select>
+
+              <label class="fw-bold mb-1">Ngày hẹn</label>
+              <input type="date" id="bookingDate" class="form-control form-control-sm mb-3" />
+
+              <div class="p-2 bg-light border rounded mb-3 text-muted" style="font-size: 0.8rem">
+                <div>- Tự động tính phụ thu nếu rơi vào Thứ 7 / Chủ Nhật (+10%).</div>
+                <div>- Đặt cọc giữ chỗ <b>30%</b> tổng chi phí dự kiến.</div>
+              </div>
+
+              <button class="btn btn-sm btn-success w-100 fw-bold py-2" onclick="submitBooking()">
+                ĐẶT LỊCH NGAY
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-7 col-lg-8">
+          <div class="card shadow-sm">
+            <div class="card-header fw-bold bg-white d-flex justify-content-between align-items-center py-2">
+              <span>2. Danh Sách Lịch Hẹn Đã Đặt</span>
+              <button class="btn btn-sm btn-outline-secondary py-0" onclick="loadBookings()">Làm mới</button>
+            </div>
+            <div class="card-body p-0 small">
+              <div class="table-responsive">
+                <table class="table table-hover table-bordered mb-0 align-middle">
+                  <thead class="table-light">
+                    <tr>
+                      <th class="text-center">Mã</th>
+                      <th>Thú cưng</th>
+                      <th>Dịch vụ</th>
+                      <th>Ngày hẹn</th>
+                      <th>Tiền cọc</th>
+                      <th class="text-center">Trạng thái</th>
+                      <th class="text-end">Chứng từ</th>
+                    </tr>
+                  </thead>
+                  <tbody id="bookingTableBody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="bridgeModal" tabindex="-1">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header py-2">
+            <h6 class="modal-title fw-bold" id="modalTitle">Chứng từ</h6>
+            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="p-2 border-bottom bg-light small">
+            <label class="fw-bold text-muted mb-1">Định dạng kết xuất:</label>
+            <select id="bridgeFormatSelect" class="form-select form-select-sm" onchange="fetchBridgeTicket()">
+              <option value="online">Bản điện tử</option>
+              <option value="offline">Bản in tại quầy</option>
+            </select>
+          </div>
+          <div class="modal-body p-3 small" id="modalContent"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal fade" id="qrModal" tabindex="-1">
+      <div class="modal-dialog modal-sm modal-dialog-centered">
+        <div class="modal-content">
+          <div class="modal-header py-2 bg-success text-white">
+            <h6 class="modal-title fw-bold">Mã VietQR Đặt Cọc (Demo)</h6>
+            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+          </div>
+          <div class="modal-body p-3 text-center">
+            <div class="badge bg-warning text-dark mb-2">Mô phỏng thanh toán trực tuyến</div>
+            <p class="small text-muted mb-2">Lịch hẹn <b>#<span id="qrBookingId"></span></b> đã được khởi tạo</p>
+            <div class="border rounded p-2 bg-white shadow-sm mb-2 d-inline-block">
+              <img id="qrImage" src="" alt="VietQR Mockup" class="img-fluid" style="max-height: 200px" />
+            </div>
+            <div class="bg-light p-2 rounded text-start small mb-3 border" style="font-size: 0.78rem">
+              <div>Ngân hàng: <b>MBBank</b></div>
+              <div>STK: <b>0987654321</b></div>
+              <div>Chủ TK: <b>PET CARE SPA</b></div>
+              <div>Tiền cọc (30%): <b class="text-danger" id="qrDepositAmount"></b></div>
+              <div>Nội dung CK: <b class="text-primary" id="qrMemo"></b></div>
+            </div>
+            <button class="btn btn-sm btn-success w-100 fw-bold py-2" data-bs-dismiss="modal" onclick="confirmDepositMockup()">
+              Xác Nhận Đã Chuyển Khoản
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+      const currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+      if (!currentUser) window.location.replace("/login.html");
+      if (currentUser.customerType === "ADMIN") window.location.replace("/staff.html");
+
+      let activeTicket = null;
+      let pendingBooking = null;
+
+      function logout() {
+        localStorage.removeItem("currentUser");
+        window.location.replace("/login.html");
+      }
+
+      async function init() {
+        const displayName = currentUser.fullName ? currentUser.fullName + " (" + currentUser.phone + ")" : currentUser.phone;
+        document.getElementById("userInfoText").innerText = displayName;
+        document.getElementById("bookingDate").value = new Date(Date.now() + 86400000).toISOString().split("T")[0];
+
+        const resSrv = await fetch("/api/staff/services");
+        if (resSrv.ok) {
+          const services = await resSrv.json();
+          document.getElementById("bookingService").innerHTML = services
+            .map((s) => `<option value="${s.id}">${s.name} - ${s.price.toLocaleString()}đ</option>`)
+            .join("");
+        }
+
+        await Promise.all([loadPetsDropdown(), loadBookings()]);
+      }
+
+      async function loadPetsDropdown() {
+        const res = await fetch(`/api/pet/customer/${currentUser.id}`);
+        if (!res.ok) return;
+        const pets = await res.json();
+        document.getElementById("bookingPet").innerHTML =
+          pets.map((p) => `<option value="${p.id}">${p.nameAndBreed}</option>`).join("") ||
+          "<option value=''>-- Chưa có bé nào (Hãy thêm bé trước) --</option>";
+      }
+
+      function submitBooking() {
+        const petId = parseInt(document.getElementById("bookingPet").value);
+        const serviceId = parseInt(document.getElementById("bookingService").value);
+        const bookingDate = document.getElementById("bookingDate").value;
+        if (!petId) {
+          if (confirm("Bạn chưa có thú cưng trong hồ sơ. Đến trang Thêm thú cưng ngay?")) {
+            window.location.href = "/pets.html";
+          }
+          return;
+        }
+
+        pendingBooking = { customerId: currentUser.id, petId, serviceId, bookingDate };
+
+        const svcSelect = document.getElementById("bookingService");
+        const selectedText = svcSelect.options[svcSelect.selectedIndex]?.text || "";
+        const priceMatch = selectedText.match(/([0-9.,]+)đ/);
+        const basePrice = priceMatch ? parseInt(priceMatch[1].replace(/\./g, "")) : 100000;
+        const depositAmount = Math.round(basePrice * 0.3);
+
+        document.getElementById("qrBookingId").innerText = "TẠM TÍNH";
+        document.getElementById("qrDepositAmount").innerText = depositAmount.toLocaleString() + "đ";
+        document.getElementById("qrMemo").innerText = `PETSPA COC ${currentUser.phone}`;
+        document.getElementById("qrImage").src = `https://img.vietqr.io/image/MB-0987654321-compact2.png?amount=${depositAmount}&addInfo=PETSPA%20COC%20${currentUser.phone}&accountName=PET%20CARE%20SPA`;
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("qrModal")).show();
+      }
+
+      async function confirmDepositMockup() {
+        if (!pendingBooking) return;
+        const res = await fetch("/api/booking", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(pendingBooking),
+        });
+        const d = await res.json();
+        if (!res.ok) return alert(d.message || "Lỗi đặt lịch!");
+        pendingBooking = null;
+        alert("Xác nhận nộp cọc thành công! Hệ thống đã ghi nhận lịch hẹn #" + d.bookingId);
+        await loadBookings();
+      }
+
+      async function loadBookings() {
+        const res = await fetch(`/api/booking/customer/${currentUser.id}`);
+        if (!res.ok) return;
+        const list = await res.json();
+        document.getElementById("bookingTableBody").innerHTML =
+          list
+            .map(
+              (b) => `<tr>
+                <td class="text-center">#${b.id}</td>
+                <td><b>${b.petName}</b></td>
+                <td>${b.sName}</td>
+                <td>${b.date}</td>
+                <td>${b.depositAmount.toLocaleString()}đ</td>
+                <td class="text-center"><span class="badge ${getStatusBadge(b.status)}">${b.status}</span></td>
+                <td class="text-end">
+                  <button class="btn btn-sm btn-outline-dark py-0 me-1" onclick="openBridgeModal(${b.id}, 'APPOINTMENT')">
+                    Phiếu hẹn
+                  </button>
+                  <button class="btn btn-sm btn-success py-0" onclick="openBridgeModal(${b.id}, 'INVOICE')">
+                    Hóa đơn
+                  </button>
+                </td>
+              </tr>`
+            )
+            .join("") || '<tr><td colspan="7" class="text-center p-3 text-muted">Chưa có lịch hẹn nào</td></tr>';
+      }
+
+      function getStatusBadge(status) {
+        switch (status) {
+          case "COMPLETED": return "bg-success";
+          case "IN_PROGRESS": return "bg-warning text-dark";
+          case "DONE_UNPAID": return "bg-info text-dark";
+          default: return "bg-secondary";
+        }
+      }
+
+      function openBridgeModal(id, type) {
+        activeTicket = { id, type };
+        document.getElementById("modalTitle").innerText =
+          type === "INVOICE" ? `Hóa Đơn #${id}` : `Phiếu Tiếp Nhận #${id}`;
+        fetchBridgeTicket();
+        bootstrap.Modal.getOrCreateInstance(document.getElementById("bridgeModal")).show();
+      }
+
+      async function fetchBridgeTicket() {
+        if (!activeTicket) return;
+        const format = document.getElementById("bridgeFormatSelect").value;
+        const url =
+          activeTicket.type === "INVOICE"
+            ? `/api/staff/bookings/${activeTicket.id}/export-invoice?format=${format}`
+            : `/api/booking/${activeTicket.id}/export?format=${format}`;
+
+        const res = await fetch(url);
+        if (!res.ok) return;
+        const data = await res.json();
+        document.getElementById("modalContent").innerHTML =
+          format === "offline"
+            ? `<pre class="pos-ticket-preview mb-0">${data.content}</pre>`
+            : data.content;
+      }
+
+      document.addEventListener("DOMContentLoaded", init);
+      setInterval(loadBookings, 2000);
+    </script>
+  </body>
+</html>
