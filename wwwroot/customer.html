@@ -154,6 +154,8 @@
         window.location.replace("/login.html");
       }
 
+      let serviceList = [];
+
       async function init() {
         const displayName = currentUser.fullName ? currentUser.fullName + " (" + currentUser.phone + ")" : currentUser.phone;
         document.getElementById("userInfoText").innerText = displayName;
@@ -161,8 +163,8 @@
 
         const resSrv = await fetch("/api/staff/services");
         if (resSrv.ok) {
-          const services = await resSrv.json();
-          document.getElementById("bookingService").innerHTML = services
+          serviceList = await resSrv.json();
+          document.getElementById("bookingService").innerHTML = serviceList
             .map((s) => `<option value="${s.id}">${s.name} - ${s.price.toLocaleString()}đ</option>`)
             .join("");
         }
@@ -192,14 +194,18 @@
 
         pendingBooking = { customerId: currentUser.id, petId, serviceId, bookingDate };
 
-        const svcSelect = document.getElementById("bookingService");
-        const selectedText = svcSelect.options[svcSelect.selectedIndex]?.text || "";
-        const priceMatch = selectedText.match(/([0-9.,]+)đ/);
-        const basePrice = priceMatch ? parseInt(priceMatch[1].replace(/\./g, "")) : 100000;
-        const depositAmount = Math.round(basePrice * 0.3);
+        const selectedSvc = serviceList.find((s) => s.id === serviceId);
+        const basePrice = selectedSvc ? selectedSvc.price : 100000;
+        
+        // Kiểm tra Thứ 7 / Chủ nhật (phụ thu cuối tuần 10% đồng bộ với backend Strategy)
+        const bDate = new Date(bookingDate + "T00:00:00");
+        const dayOfWeek = bDate.getDay();
+        const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+        const estimatedTotal = isWeekend ? basePrice * 1.1 : basePrice;
+        const depositAmount = Math.round(estimatedTotal * 0.3);
 
         document.getElementById("qrBookingId").innerText = "TẠM TÍNH";
-        document.getElementById("qrDepositAmount").innerText = depositAmount.toLocaleString() + "đ";
+        document.getElementById("qrDepositAmount").innerText = depositAmount.toLocaleString() + "đ" + (isWeekend ? " (Cuối tuần +10%)" : "");
         document.getElementById("qrMemo").innerText = `PETSPA COC ${currentUser.phone}`;
         document.getElementById("qrImage").src = `https://img.vietqr.io/image/MB-0987654321-compact2.png?amount=${depositAmount}&addInfo=PETSPA%20COC%20${currentUser.phone}&accountName=PET%20CARE%20SPA`;
         bootstrap.Modal.getOrCreateInstance(document.getElementById("qrModal")).show();

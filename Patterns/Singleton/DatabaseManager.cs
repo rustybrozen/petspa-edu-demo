@@ -91,7 +91,7 @@ public class DatabaseManager
 
             INSERT OR IGNORE INTO Services (Id, Name, BasePrice) VALUES
             (1, 'Combo Tắm sấy & Vệ sinh cơ bản', 150000),
-            (2, 'Cắt tỉa & Tạo kiểu lông chuyên sâu', 280000),
+            (2, 'Cắt tỉa & Tạo kiểu lông chuyên sâu', 300000),
             (3, 'Combo Spa thư giãn phục hồi', 400000),
             (4, 'Khách sạn thú cưng tiêu chuẩn', 180000),
             (5, 'Khách sạn thú cưng VIP', 300000);
@@ -104,8 +104,8 @@ public class DatabaseManager
             UPDATE Customers SET FullName = 'Nguyễn Văn Khách' WHERE Id = 2 AND (FullName IS NULL OR FullName = '');
 
             INSERT OR IGNORE INTO Pets (Id, CustomerId, NameAndBreed) VALUES
-            (1, 2, 'Milo - Chó Poodle'),
-            (2, 2, 'Bông - Mèo Anh lông ngắn');
+            (1, 2, 'Mun chó trắng'),
+            (2, 2, 'Mèo xám');
         ";
 
         command.ExecuteNonQuery();
